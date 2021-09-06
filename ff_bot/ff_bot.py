@@ -280,6 +280,10 @@ def get_trophies(league, week=None):
     text = ['Trophies of the week:'] + low_score_str + high_score_str + close_score_str + blowout_str
     return '\n'.join(text)
 
+def get_lineup_warning():
+    text = 'Games are about to start...check those lineups!'
+    return text
+
 def bot_main(function):
     try:
         bot_id = os.environ["BOT_ID"]
@@ -397,6 +401,8 @@ def bot_main(function):
         week = league.current_week - 1
         text = "Final " + get_scoreboard_short(league, week=week)
         text = text + "\n\n" + get_trophies(league, week=week)
+    elif function=="get_lineup_warning":
+        text = get_lineup_warning()
     elif function=="init":
         try:
             text = os.environ["INIT_MSG"]
@@ -464,6 +470,10 @@ if __name__ == '__main__':
         timezone=my_timezone, replace_existing=True)
     sched.add_job(bot_main, 'cron', ['get_scoreboard_short'], id='scoreboard2',
         day_of_week='sun', hour='16,20', start_date=ff_start_date, end_date=ff_end_date,
+        timezone=game_timezone, replace_existing=True)
+    # Warnings
+    sched.add_job(bot_main, 'cron', ['get_lineup_warning'], id='lineup_warning',
+        day_of_week='mon', hour=16, minute=15, start_date=ff_start_date, end_date=ff_end_date,
         timezone=game_timezone, replace_existing=True)
 
     print("Ready!")
