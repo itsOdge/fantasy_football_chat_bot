@@ -473,7 +473,7 @@ if __name__ == '__main__':
         timezone=game_timezone, replace_existing=True)
     # Warnings
     sched.add_job(bot_main, 'cron', ['get_lineup_warning'], id='lineup_warning',
-        day_of_week='mon', hour=20, minute=25, start_date=ff_start_date, end_date=ff_end_date,
+        day_of_week='mon', hour=20, minute=31, start_date=ff_start_date, end_date=ff_end_date,
         timezone=game_timezone, replace_existing=True)
 
     print("Ready!")
