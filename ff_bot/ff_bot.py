@@ -1,9 +1,14 @@
+import datetime
+import imaplib
+import traceback
+
 import requests
 import json
 import os
 import random
 from apscheduler.schedulers.blocking import BlockingScheduler
 from espn_api.football import League
+from email import message_from_bytes
 
 class GroupMeException(Exception):
     pass
@@ -213,6 +218,7 @@ def get_close_scores(league, week=None):
     text = ['Close Scores'] + score
     return '\n'.join(text)
 
+
 def get_power_rankings(league, week=None):
     # power rankings requires an integer value, so this grabs the current week for that
     if not week:
@@ -226,6 +232,36 @@ def get_power_rankings(league, week=None):
              if i]
     text = ['Power Rankings'] + score
     return '\n'.join(text)
+
+
+def get_email_message(interval, from_address, password, server):
+    try:
+        mail = imaplib.IMAP4_SSL(server)
+        mail.login(from_address, password)
+        mail.select('inbox')
+
+        data = mail.search(None, 'ALL')
+        datalist = data[1][0].split(b' ')
+
+        datalist.reverse()
+        for id in datalist:
+            typ, content = mail.fetch(id, '(RFC822)')
+            if content is not None:
+                msg = message_from_bytes(content[0][1])
+
+                date = msg['Date']
+                subject = msg['Subject']
+                timestamp = datetime.datetime.strptime(date, '%a, %d %b %Y %H:%M:%S %z').timestamp()
+
+                if interval[0] < timestamp <= interval[1]:
+                    yield subject
+                else:
+                    break
+
+    except Exception as e:
+        traceback.print_exc()
+        print(str(e))
+
 
 def get_trophies(league, week=None):
     #Gets trophies for highest score, lowest score, closest score, and biggest win
@@ -279,6 +315,41 @@ def get_trophies(league, week=None):
 
     text = ['Trophies of the week:'] + low_score_str + high_score_str + close_score_str + blowout_str
     return '\n'.join(text)
+
+
+def remember_last(func):
+    last_call = [datetime.datetime.now().timestamp()]
+
+    def _call_with_interval(*args, **kwargs):
+        current_time = datetime.datetime.now().timestamp()
+        if 'interval' not in kwargs or kwargs['interval'] is None:
+            kwargs['interval'] = (last_call[0], current_time,)
+        val = func(*args, **kwargs)
+        last_call[0] = current_time
+        return val
+
+    return _call_with_interval
+
+
+@remember_last
+def bot_email_check(interval=None):
+    server = os.getenv('FFBOT_EMAIL_SERVER', None)
+    address = os.getenv('FFBOT_EMAIL_ADDRESS', None)
+    password = os.getenv('FFBOT_EMAIL_PASSWORD', None)
+
+    text = ""
+
+    if interval and server and address and password:
+        for msg in get_email_message(interval=interval,
+                                     server=server,
+                                     from_address=address,
+                                     password=password):
+            if text:
+                text += "\n"
+            text += msg
+
+    return text
+
 
 def bot_main(function):
     try:
@@ -413,6 +484,8 @@ def bot_main(function):
         except KeyError:
             #do nothing here, empty init message
             pass
+    elif function == "email_check":
+        text = bot_email_check()
     else:
         text = "Something happened. HALP"
 
@@ -441,6 +514,10 @@ if __name__ == '__main__':
         my_timezone = os.environ["TIMEZONE"]
     except KeyError:
         my_timezone='America/New_York'
+
+    email_address = os.getenv('FFBOT_EMAIL_ADDRESS', None)
+    email_server = os.getenv('FFBOT_EMAIL_SERVER', None)
+    email_password = os.getenv('FFBOT_EMAIL_PASSWORD', None)
 
     game_timezone='America/New_York'
     bot_main("init")
@@ -491,6 +568,10 @@ if __name__ == '__main__':
     sched.add_job(bot_main, 'cron', ['get_lineup_warning_thursday_night'], id='lineup_warning_thursday_night',
         day_of_week='thu', hour=19, minute=45, start_date=ff_start_date, end_date=ff_end_date,
         timezone=game_timezone, replace_existing=True)
+
+    sched.add_job(bot_main, 'interval',
+                  ['email_check'], id='email_messages', minutes=1,
+                  start_date=ff_start_date, end_date=ff_end_date)
 
     print("Ready!")
     sched.start()
