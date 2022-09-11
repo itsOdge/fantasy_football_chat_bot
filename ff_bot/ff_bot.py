@@ -750,8 +750,6 @@ if __name__ == '__main__':
     sched.add_job(bot_main, 'interval',
                   ['email_check'], id='email_messages', minutes=1,
                   start_date=ff_start_date, end_date=ff_end_date)
-                  day_of_week='sun', hour='16,20', start_date=ff_start_date, end_date=ff_end_date,
-                  timezone=game_timezone, replace_existing=True)
 
     print("Ready!")
     sched.start()
