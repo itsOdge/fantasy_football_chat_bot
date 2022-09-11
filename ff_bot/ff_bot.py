@@ -629,7 +629,6 @@ def bot_main(function):
         text = "The Monday night game is about to start....check those lineups!"
     elif function=="get_lineup_warning_thursday_night":
         text = "The Thursday night game is about to start....check those lineups!"
-    elif function=="init":
     elif function == "get_waiver_report" and swid != '{1}' and espn_s2 != '1':
         text = get_waiver_report(league, faab)
     elif function == "init":
