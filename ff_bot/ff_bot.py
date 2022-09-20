@@ -705,7 +705,7 @@ if __name__ == '__main__':
                   day_of_week='tue', hour=18, minute=30, start_date=ff_start_date, end_date=ff_end_date,
                   timezone=my_timezone, replace_existing=True)
     sched.add_job(bot_main, 'cron', ['get_final'], id='final',
-                  day_of_week='tue', hour=7, minute=30, start_date=ff_start_date, end_date=ff_end_date,
+                  day_of_week='tue', hour=18, minute=30, start_date=ff_start_date, end_date=ff_end_date,
                   timezone=my_timezone, replace_existing=True)
     sched.add_job(bot_main, 'cron', ['get_standings'], id='standings',
                     day_of_week='wed', hour=7, minute=30, start_date=ff_start_date, end_date=ff_end_date,
@@ -747,9 +747,9 @@ if __name__ == '__main__':
         day_of_week='thu', hour=19, minute=45, start_date=ff_start_date, end_date=ff_end_date,
         timezone=game_timezone, replace_existing=True)
 
-    sched.add_job(bot_main, 'interval',
-                  ['email_check'], id='email_messages', minutes=1,
-                  start_date=ff_start_date, end_date=ff_end_date)
+    #sched.add_job(bot_main, 'interval',
+    #              ['email_check'], id='email_messages', minutes=1,
+    #              start_date=ff_start_date, end_date=ff_end_date)
 
     print("Ready!")
     sched.start()
