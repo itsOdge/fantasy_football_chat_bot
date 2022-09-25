@@ -487,7 +487,6 @@ def get_standings_without_kickers(league: League):
             text += line.format(
                 team.team_name if len(team.team_name) < 12 else team.team_name[:9] + '...',
                 scores['w'], scores['l'], scores['t'], scores['pf'], scores['pa'])
-        print(text)
         return text
 
     return print_standings()
@@ -640,6 +639,7 @@ def bot_main(function):
         print(get_standings(league, top_half_scoring))
         print(get_power_rankings(league))
         print(get_monitor(league))
+        print(get_standings_without_kickers(league))
         if waiver_report and swid != '{1}' and espn_s2 != '1':
             print(get_waiver_report(league, faab))
         function = "get_final"
