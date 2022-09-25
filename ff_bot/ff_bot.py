@@ -354,9 +354,11 @@ def get_power_rankings(league, week=None):
     return '\n'.join(text)
 
 
-def get_email_message(interval, mail):
+def get_email_message(interval, from_address, password, server):
     try:
-
+        mail = imaplib.IMAP4_SSL(server)
+        mail.login(from_address, password)
+        mail.select('inbox')
 
         data = mail.search(None, 'ALL')
         datalist = data[1][0].split(b' ')
@@ -511,15 +513,13 @@ def bot_email_check(interval=None):
     address = os.getenv('FFBOT_EMAIL_ADDRESS', None)
     password = os.getenv('FFBOT_EMAIL_PASSWORD', None)
 
-    mail = imaplib.IMAP4_SSL(server)
-    mail.login(address, password)
-    mail.select('inbox')
-
     text = ""
 
     if interval and server and address and password:
         for msg in get_email_message(interval=interval,
-                                     mail=mail):
+                                     server=server,
+                                     from_address=address,
+                                     password=password):
             if text:
                 text += "\n"
             text += msg
