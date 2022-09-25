@@ -354,11 +354,9 @@ def get_power_rankings(league, week=None):
     return '\n'.join(text)
 
 
-def get_email_message(interval, from_address, password, server):
+def get_email_message(interval, mail):
     try:
-        mail = imaplib.IMAP4_SSL(server)
-        mail.login(from_address, password)
-        mail.select('inbox')
+
 
         data = mail.search(None, 'ALL')
         datalist = data[1][0].split(b' ')
@@ -437,6 +435,62 @@ def get_trophies(league, week=None):
     return '\n'.join(text)
 
 
+def get_standings_without_kickers(league: League):
+    teams = {team: {'w': 0, 'l': 0, 't': 0, 'pf': 0, 'pa': 0} for team in league.teams}
+    for week in range(1, league.current_week):
+        for matchup in league.box_scores(week):
+            # Away team
+            def get_score(lineup):
+                score = 0
+                for player in lineup:
+                    if player.slot_position in ['QB', 'RB', 'WR', 'TE', 'OP', 'D/ST']:
+                        score += player.points
+                return score
+
+            away_score = get_score(matchup.away_lineup)
+            home_score = get_score(matchup.home_lineup)
+
+            if away_score < home_score:
+                teams[matchup.home_team]['w'] += 1  # Home win
+                teams[matchup.away_team]['l'] += 1  # Away loss
+            elif away_score == home_score:
+                teams[matchup.home_team]['t'] += 1
+                teams[matchup.away_team]['t'] += 1
+            else:
+                teams[matchup.home_team]['l'] += 1  # Home loss
+                teams[matchup.away_team]['w'] += 1  # Away win
+
+            teams[matchup.home_team]['pf'] += home_score
+            teams[matchup.home_team]['pa'] += away_score
+            teams[matchup.away_team]['pf'] += away_score
+            teams[matchup.away_team]['pa'] += home_score
+
+    def sorter(current_team):
+        team, scores = current_team
+        team_place = len(teams) # Default is last place
+        for team2, scores2 in teams.items():
+            if team != team2:  # Not same team
+                if (scores['w'] > scores2['w']) or (scores['w'] == scores2['w'] and scores['pf'] > scores2['pf']):
+                    team_place -= 1
+        return team_place
+
+    standings = [(team, s) for team, s in sorted(teams.items(), key=sorter)]
+
+    def print_standings():
+        text = "STANDINGS WITHOUT COUNTING KICKERS: \n\n"
+
+        line = '{0:12}|{1:2}|{2:2}|{3:2}|{4:5}|{5:5}|\n'
+        text += line.format("Team", "W", "L", "T", "PF", "PA")
+        for team, scores in standings:
+            text += line.format(
+                team.team_name if len(team.team_name) < 12 else team.team_name[:9] + '...',
+                scores['w'], scores['l'], scores['t'], scores['pf'], scores['pa'])
+        print(text)
+        return text
+
+    return print_standings()
+
+
 def remember_last(func):
     last_call = [datetime.datetime.now().timestamp()]
 
@@ -457,13 +511,15 @@ def bot_email_check(interval=None):
     address = os.getenv('FFBOT_EMAIL_ADDRESS', None)
     password = os.getenv('FFBOT_EMAIL_PASSWORD', None)
 
+    mail = imaplib.IMAP4_SSL(server)
+    mail.login(address, password)
+    mail.select('inbox')
+
     text = ""
 
     if interval and server and address and password:
         for msg in get_email_message(interval=interval,
-                                     server=server,
-                                     from_address=address,
-                                     password=password):
+                                     mail=mail):
             if text:
                 text += "\n"
             text += msg
@@ -595,6 +651,8 @@ def bot_main(function):
     if function == "get_matchups":
         text = get_matchups(league, random_phrase)
         text = text + "\n\n" + get_projected_scoreboard(league)
+    elif function == "get_standings_without_kickers":
+        text = get_standings_without_kickers(league)
     elif function == "get_monitor":
         text = get_monitor(league)
     elif function == "get_scoreboard_short":
@@ -655,6 +713,9 @@ def bot_main(function):
 
 
 if __name__ == '__main__':
+
+
+
     try:
         ff_start_date = os.environ["START_DATE"]
     except KeyError:
@@ -684,7 +745,8 @@ if __name__ == '__main__':
     email_server = os.getenv('FFBOT_EMAIL_SERVER', None)
     email_password = os.getenv('FFBOT_EMAIL_PASSWORD', None)
 
-    game_timezone='America/New_York'
+    game_timezone = 'America/New_York'
+
     bot_main("init")
     sched = BlockingScheduler(job_defaults={'misfire_grace_time': 15*60})
 
@@ -692,6 +754,7 @@ if __name__ == '__main__':
     # power rankings:                     tuesday evening at 6:30pm local time.
     # trophies:                           tuesday morning at 7:30am local time.
     # standings:                          wednesday morning at 7:30am local time.
+    # standings w/o kickers:              wednesday morning at 7:30am local time.
     # waiver report:                      wednesday morning at 7:30am local time. (optional)
     # matchups:                           thursday evening at 7:30pm east coast time.
     # score update:                       friday, monday, and tuesday morning at 7:30am local time.
@@ -708,6 +771,9 @@ if __name__ == '__main__':
                   day_of_week='tue', hour=18, minute=30, start_date=ff_start_date, end_date=ff_end_date,
                   timezone=my_timezone, replace_existing=True)
     sched.add_job(bot_main, 'cron', ['get_standings'], id='standings',
+                    day_of_week='wed', hour=7, minute=30, start_date=ff_start_date, end_date=ff_end_date,
+                    timezone=my_timezone, replace_existing=True)
+    sched.add_job(bot_main, 'cron', ['get_standings_without_kickers'], id='standings_without_kickers',
                     day_of_week='wed', hour=7, minute=30, start_date=ff_start_date, end_date=ff_end_date,
                     timezone=my_timezone, replace_existing=True)
     if daily_waiver:
