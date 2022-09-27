@@ -440,6 +440,7 @@ def get_trophies(league, week=None):
 def get_standings_without_kickers(league: League):
     teams = {team: {'w': 0, 'l': 0, 't': 0, 'pf': 0, 'pa': 0} for team in league.teams}
     for week in range(1, league.current_week):
+        weekly_totals = []
         for matchup in league.box_scores(week):
             # Away team
             def get_score(lineup):
@@ -466,6 +467,18 @@ def get_standings_without_kickers(league: League):
             teams[matchup.home_team]['pa'] += away_score
             teams[matchup.away_team]['pf'] += away_score
             teams[matchup.away_team]['pa'] += home_score
+            weekly_totals.append((matchup.home_team, home_score,))
+            weekly_totals.append((matchup.away_team, away_score,))
+
+        # Add extra wins and losses based on bottom and top half
+        for cnt, x in enumerate([(team, s) for team, s in sorted(weekly_totals, key=lambda y: y[1], reverse=True)]):
+            if cnt < (len(teams) / 2):
+                teams[x[0]]['w'] += 1
+            else:
+                teams[x[0]]['l'] += 1
+
+
+
 
     def sorter(current_team):
         team, scores = current_team
@@ -479,7 +492,7 @@ def get_standings_without_kickers(league: League):
     standings = [(team, s) for team, s in sorted(teams.items(), key=sorter)]
 
     def print_standings():
-        text = "STANDINGS WITHOUT COUNTING KICKERS: \n\n"
+        text = "STANDINGS WITH TOP-HALF WINS AND NO KICKERS: \n\n"
 
         line = '{0:12}|{1:2}|{2:2}|{3:2}|{4:5}|{5:5}|\n'
         text += line.format("Team", "W", "L", "T", "PF", "PA")
@@ -487,6 +500,8 @@ def get_standings_without_kickers(league: League):
             text += line.format(
                 team.team_name if len(team.team_name) < 12 else team.team_name[:9] + '...',
                 scores['w'], scores['l'], scores['t'], scores['pf'], scores['pa'])
+
+        text += "\nWow, look how much better wins correlate with 'Points For'!\nWe should've listened to Justin!"
         return text
 
     return print_standings()
@@ -630,6 +645,7 @@ def bot_main(function):
         league = League(league_id=league_id, year=year, espn_s2=espn_s2, swid=swid)
 
     if test:
+        print(get_standings_without_kickers(league))
         print(get_matchups(league, random_phrase))
         print(get_scoreboard_short(league))
         print(get_projected_scoreboard(league))
@@ -639,7 +655,6 @@ def bot_main(function):
         print(get_standings(league, top_half_scoring))
         print(get_power_rankings(league))
         print(get_monitor(league))
-        print(get_standings_without_kickers(league))
         if waiver_report and swid != '{1}' and espn_s2 != '1':
             print(get_waiver_report(league, faab))
         function = "get_final"
@@ -714,8 +729,6 @@ def bot_main(function):
 
 if __name__ == '__main__':
 
-
-
     try:
         ff_start_date = os.environ["START_DATE"]
     except KeyError:
@@ -770,10 +783,10 @@ if __name__ == '__main__':
     sched.add_job(bot_main, 'cron', ['get_final'], id='final',
                   day_of_week='tue', hour=18, minute=30, start_date=ff_start_date, end_date=ff_end_date,
                   timezone=my_timezone, replace_existing=True)
-    sched.add_job(bot_main, 'cron', ['get_standings'], id='standings',
-                    day_of_week='wed', hour=7, minute=30, start_date=ff_start_date, end_date=ff_end_date,
-                    timezone=my_timezone, replace_existing=True)
     sched.add_job(bot_main, 'cron', ['get_standings_without_kickers'], id='standings_without_kickers',
+                    day_of_week='tue', hour=18, minute=35, start_date=ff_start_date, end_date=ff_end_date,
+                    timezone=my_timezone, replace_existing=True)
+    sched.add_job(bot_main, 'cron', ['get_standings'], id='standings',
                     day_of_week='wed', hour=7, minute=30, start_date=ff_start_date, end_date=ff_end_date,
                     timezone=my_timezone, replace_existing=True)
     if daily_waiver:
