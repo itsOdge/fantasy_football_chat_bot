@@ -217,6 +217,19 @@ def espn_bot(function):
         except KeyError:
             # do nothing here, empty broadcast message
             pass
+    elif function == 'get_weekly_side_bet':
+        text = espn.get_weekly_side_bet()
+    # Lineup warnings
+    elif function=="get_lineup_warning_1pm":
+        text = "The 1pm games are about to start....check those lineups!"
+    elif function=="get_lineup_warning_4pm":
+        text = "The 4pm games are about to start....check those lineups!"
+    elif function=="get_lineup_warning_sunday_night":
+        text = "The Sunday night game is about to start....check those lineups!"
+    elif function=="get_lineup_warning_monday_night":
+        text = "The Monday night game is about to start....check those lineups!"
+    elif function=="get_lineup_warning_thursday_night":
+        text = "The Thursday night game is about to start....check those lineups!"
     elif function == "init":
         try:
             text = data["init_msg"]
