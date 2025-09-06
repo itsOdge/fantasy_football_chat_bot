@@ -662,7 +662,7 @@ def optimal_team_scores(league, week=None, full_report=False, recap=False):
         if recap:
             return worst[0].team_abbrev
 
-        worst_mgr_str = ['🤡 Worst Manager 🤡'] + ['%s left %.2f points on their bench. Only scoring %.2f%% of their optimal score.' %
+        worst_mgr_str = ['🤡🍺 Worst Manager 🤡🍺'] + ['%s left %.2f points on their bench. Only scoring %.2f%% of their optimal score. You owe a shotgun before next Monday\'s game!' %
                                                  (worst[0].team_name, worst[1][0] - worst[1][1], worst[1][3])]
 
         return (best_mgr_str + worst_mgr_str)
