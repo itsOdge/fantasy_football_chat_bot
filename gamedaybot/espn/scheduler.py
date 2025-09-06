@@ -67,7 +67,7 @@ def scheduler():
 
     # Temp because of issue. TODO: REMOVE and update one above
     sched.add_job(espn_bot, 'cron', ['get_matchups'], id='matchups',
-                   day_of_week='sat', hour=11, minute=48, start_date=ff_start_date, end_date=ff_end_date,
+                   day_of_week='sat', hour=11, minute=57, start_date=ff_start_date, end_date=ff_end_date,
                    timezone=game_timezone, replace_existing=True)
     
     sched.add_job(espn_bot, 'cron', ['get_scoreboard_short'], id='scoreboard1',
@@ -88,7 +88,7 @@ def scheduler():
     #               timezone=game_timezone, replace_existing=True)
 
     # Temp because of issue. TODO: REMOVE and update one above
-    sched.add_job(espn_bot, 'cron', ['get_weekly_side_bet'], id='matchups',
+    sched.add_job(espn_bot, 'cron', ['get_weekly_side_bet'], id='side_bets',
                   day_of_week='sat', hour=11, minute=52, start_date=ff_start_date, end_date=ff_end_date,
                   timezone=game_timezone, replace_existing=True)
     
