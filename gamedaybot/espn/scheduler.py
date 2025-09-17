@@ -78,7 +78,7 @@ def scheduler():
                   day_of_week='sun', hour='16,20', start_date=ff_start_date, end_date=ff_end_date,
                   timezone=game_timezone, replace_existing=True)
     
-    sched.add_job(espn_bot, 'cron', ['get_weekly_side_bet'], id='side_bets',
+    sched.add_job(espn_bot, 'cron', ['get_weekly_side_bet'], id='side_bet',
                   day_of_week='thu', hour=19, minute=35, start_date=ff_start_date, end_date=ff_end_date,
                   timezone=game_timezone, replace_existing=True)
     
@@ -98,10 +98,6 @@ def scheduler():
     sched.add_job(espn_bot, 'cron', ['get_lineup_warning_thursday_night'], id='lineup_warning_thursday_night',
         day_of_week='thu', hour=19, minute=45, start_date=ff_start_date, end_date=ff_end_date,
         timezone=game_timezone, replace_existing=True)
-
-    sched.add_job(espn_bot, 'cron', ['get_weekly_side_bet'], id='side_bet',
-                  day_of_week='thu', hour=19, minute=35, start_date=ff_start_date, end_date=ff_end_date,
-                  timezone=game_timezone, replace_existing=True)
 
     # Lineup Warnings
     sched.add_job(espn_bot, 'cron', ['get_lineup_warning_1pm'], id='lineup_warning_1pm',
